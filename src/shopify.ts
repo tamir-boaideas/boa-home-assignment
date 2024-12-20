@@ -22,4 +22,10 @@ export default shopifyApp({
     path: "/api/webhooks",
   },
   sessionStorage: new MySQLSessionStorage(process.env.DATABASE_URL || ""),
+  scopes: [
+    'read_products',
+    'write_products',
+    'read_customers',
+    'write_customers'
+  ]
 });
