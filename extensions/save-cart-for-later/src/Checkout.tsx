@@ -10,26 +10,52 @@ import {
   useStorage,
 } from '@shopify/ui-extensions-react/checkout';
 import { useState } from 'react';
+import CryptoJS from 'crypto-js';
 
 export default reactExtension('purchase.checkout.block.render', () => <Extension />);
 
 function Extension() {
   const cartLines = useCartLines();
-  const { sessionToken } = useApi();
+  const api = useApi();
   const storage = useStorage();
 
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
-  const [message, setMessage] = useState<{type: 'info' | 'success' | 'warning' | 'critical', content: string} | null>(null);
+  const [message, setMessage] = useState<{
+    type: 'info' | 'success' | 'warning' | 'critical', 
+    content: string
+  } | null>(null);
 
   const handleCheckboxChange = (variantId: string) => {
-    setSelectedItems(prev => {
-      if (prev.includes(variantId)) {
-        return prev.filter(id => id !== variantId);
-      }
-      return [...prev, variantId];
-    });
+    setSelectedItems(prev => 
+      prev.includes(variantId) 
+        ? prev.filter(id => id !== variantId)
+        : [...prev, variantId]
+    );
   };
+
+  const generateSignature = (queryParams) => {
+    // Remove the 'signature' parameter from the query parameters
+    const { signature, ...params } = queryParams;
+    const sharedSecret = "c683790c4e6a28bc2661631a40b73587";
+  
+    // Sort the parameters alphabetically by key
+    const sortedParams = Object.keys(params)
+      .sort()
+      .map(key => `${key}=${params[key]}`)
+      .join('');
+  
+    // Generate the HMAC SHA-256 signature
+    const calculatedSignature = CryptoJS.HmacSHA256(sortedParams, sharedSecret).toString(CryptoJS.enc.Hex);
+  
+    return calculatedSignature;
+  };
+
+  const getQueryParams = () => {
+    const queryString = window.location.search;
+    return Object.fromEntries(new URLSearchParams(queryString));
+  };
+  
 
   const handleSave = async () => {
     if (selectedItems.length === 0) return;
@@ -38,10 +64,14 @@ function Extension() {
     setMessage(null);
 
     try {
-      const token = await sessionToken.get();
-      if (!token) {
-        throw new Error('Authentication failed');
-      }
+      const token = await api.sessionToken.get();
+      const queryParams = getQueryParams();
+      const signature = generateSignature(queryParams);
+      const fullUrl = 'https://home-assignment-113.myshopify.com/apps/boa-home-task-bv';
+
+      const fullUrlWithSignature = `${fullUrl}?signature=${signature}`;
+
+      // Use a hardcoded URL based on your Shopify app configuration
 
       const selectedProducts = cartLines
         .filter(line => selectedItems.includes(line.merchandise.id))
@@ -50,71 +80,47 @@ function Extension() {
           quantity: line.quantity
         }));
 
-      // Save to local storage first
-      await storage.write('savedCart', JSON.stringify({
-        items: selectedProducts
-      }));
+      console.log('Saving products:', selectedProducts);
 
-      // Save to backend through app proxy
-      try {
-        const timestamp = Math.floor(Date.now() / 1000).toString();
-        
-        // Construct the request URL
-        const appProxyUrl = new URL('/app_proxy', 'https://scenarios-energy-msgid-long.trycloudflare.com');
-        appProxyUrl.searchParams.append('shop', 'home-assignment-113.myshopify.com');
-        appProxyUrl.searchParams.append('path_prefix', '/apps');
-        appProxyUrl.searchParams.append('subpath', 'boa-home-task-bv');
-        appProxyUrl.searchParams.append('path', 'save-cart');
-        
-        console.log('Making request to:', appProxyUrl.toString());
-        
-        const response = await fetch('https://scenarios-energy-msgid-long.trycloudflare.com/app_proxy', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            items: selectedProducts,
-            customer_id: 'test-customer',
-            timestamp
-          })
-        });
+      const response = await fetch(fullUrlWithSignature, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          items: selectedProducts,
+          timestamp: new Date().toISOString(),
+          signature: signature
+        })
+      });
 
-        console.log('Response status:', response.status);
-        
-        const responseText = await response.text();
-        console.log('Raw response:', responseText);
+      console.log('Response status:', response.status);
+      
+      const responseText = await response.text();
+      console.log('Response body:', responseText);
 
-        if (!response.ok) {
-          let errorMessage = 'Failed to save to backend';
-          try {
-            const errorData = responseText ? JSON.parse(responseText) : null;
-            errorMessage = errorData?.message || errorMessage;
-          } catch (e) {
-            console.error('Error parsing response:', e);
-          }
-          throw new Error(errorMessage);
-        }
-
-        setMessage({
-          type: 'success',
-          content: `Saved ${selectedProducts.length} items for later`
-        });
-      } catch (backendError) {
-        console.error('Backend save error:', backendError);
-        setMessage({
-          type: 'success',
-          content: `Saved ${selectedProducts.length} items locally`
-        });
+      if (!response.ok) {
+        throw new Error(`Failed to save cart: ${responseText}`);
       }
 
+      // Optionally save to local storage as backup
+      await storage.write('savedCart', JSON.stringify({
+        items: selectedProducts,
+        timestamp: new Date().toISOString()
+      }));
+
+      setMessage({
+        type: 'success',
+        content: `Saved ${selectedProducts.length} items for later`
+      });
+
+      // Clear selections after successful save
       setSelectedItems([]);
     } catch (error) {
       console.error('Save cart error:', error);
       setMessage({
         type: 'critical',
-        content: error instanceof Error ? error.message : 'Unable to save items. Please try again.'
+        content: error instanceof Error ? error.message : 'Failed to save cart. Please try again.'
       });
     } finally {
       setIsSaving(false);
@@ -124,14 +130,14 @@ function Extension() {
   if (cartLines.length === 0) {
     return (
       <BlockStack spacing="loose" padding="base">
-        <Text>Add items to your cart to save them for later.</Text>
+        <Text>Your cart is empty. Add items to save for later.</Text>
       </BlockStack>
     );
   }
 
   return (
     <BlockStack border="base" padding="base" spacing="loose">
-      <Text size="medium" emphasis="bold">Save items for later</Text>
+      <Text size="medium" emphasis="bold">Save Items for Later</Text>
       
       {message && (
         <Banner status={message.type}>

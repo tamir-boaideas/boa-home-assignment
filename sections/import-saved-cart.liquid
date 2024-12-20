@@ -1,6 +1,91 @@
 {% schema %}
-  {
-    "name": "Section name",
-    "settings": []
-  }
+{
+  "name": "Import Saved Cart",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Section Title",
+      "default": "Retrieve Saved Cart"
+    },
+    {
+      "type": "text",
+      "id": "login_message",
+      "label": "Login Message",
+      "default": "Please log in to use the saved cart feature."
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background Color",
+      "default": "#f4f4f4"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text Color",
+      "default": "#000000"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Import Saved Cart"
+    }
+  ]
+}
 {% endschema %}
+
+{% if customer %}
+  <div id="import-saved-cart" 
+       style="background-color: {{ section.settings.background_color }}; 
+              color: {{ section.settings.text_color }}; 
+              padding: 20px;">
+    <h2>{{ section.settings.title }}</h2>
+    <button id="retrieve-cart-btn">Retrieve Saved Cart</button>
+    <p id="cart-message"></p>
+  </div>
+
+  <script>
+    document.getElementById('retrieve-cart-btn').addEventListener('click', async () => {
+      const cartMessage = document.getElementById('cart-message');
+      try {
+        const response = await fetch('/apps/boa-home-task-bv/retrieve-cart');
+        
+        if (!response.ok) {
+          throw new Error('No saved cart found');
+        }
+
+        const { items } = await response.json();
+
+        // Add items to cart using Shopify AJAX Cart API
+        const addPromises = items.map(item => 
+          fetch('/cart/add.js', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              id: item.variantId.split('/').pop(),
+              quantity: item.quantity
+            })
+          })
+        );
+
+        await Promise.all(addPromises);
+
+        // Redirect to cart page
+        window.location.href = '/cart';
+      } catch (error) {
+        cartMessage.textContent = error.message;
+        cartMessage.style.color = 'red';
+      }
+    });
+  </script>
+{% else %}
+  <div id="import-saved-cart" 
+       style="background-color: {{ section.settings.background_color }}; 
+              color: {{ section.settings.text_color }}; 
+              padding: 20px;">
+    <p>{{ section.settings.login_message }}</p>
+  </div>
+{% endif %}

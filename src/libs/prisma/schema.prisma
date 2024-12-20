@@ -25,7 +25,7 @@ model shopify_sessions_migrations {
 }
 
 model SavedCart {
-  id         Int      @id @default(autoincrement())
+  id         String   @id @default(cuid())
   customerId String
   shop       String
   items      Json
@@ -33,5 +33,4 @@ model SavedCart {
   updatedAt  DateTime @updatedAt
 
   @@unique([customerId, shop])
-  @@index([shop])
 }
