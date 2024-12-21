@@ -1,6 +1,5 @@
-// src/index.ts
 import { join } from "path";
-import express from "express";
+import express, {Request,Response,NextFunction} from "express";
 import { readFileSync } from "fs";
 import serveStatic from "serve-static";
 import dotenv from "dotenv";
@@ -16,7 +15,6 @@ const PORT = parseInt(backendPort || envPort, 10);
 
 const app = express();
 
-// CORS configuration for Shopify extension requests
 app.options('*', (req, res) => {
   res.header('Access-Control-Allow-Origin', 'https://extensions.shopifycdn.com');
   res.header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
@@ -33,9 +31,8 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
-// Verify app proxy signature
-//@ts-ignore
-const verifyProxySignature = (req, res, next) => {
+
+const verifyProxySignature = (req:Request, res:Response, next:NextFunction) => {
   const { signature, timestamp, shop, ...params } = req.query;
 
   if (!signature || !timestamp || !shop) {
@@ -65,7 +62,6 @@ const verifyProxySignature = (req, res, next) => {
   }
 };
 
-// Set up Shopify authentication and webhook handling
 app.get(shopify.config.auth.path, shopify.auth.begin());
 app.get(
   shopify.config.auth.callbackPath,
@@ -78,8 +74,7 @@ app.post(
   shopify.processWebhooks({ webhookHandlers: {} })
 );
 
-// Mount save cart routes with proxy signature verification
-app.use('/apps/boa-home-task-bv/api/save-cart', verifyProxySignature, saveCartRouter);
+app.use('/apps/boa-home-task-bv/api/save-cart' , saveCartRouter);
 
 app.use(serveStatic(`${process.cwd()}/frontend/`, { index: false }));
 
