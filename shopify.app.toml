@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "c683790c4e6a28bc2661631a40b73587"
-application_url = "https://heaven-recipients-mem-compatible.trycloudflare.com"
+application_url = "https://ladies-observer-look-choice.trycloudflare.com"
 embedded = true
 name = "boa-home-task-bv"
 handle = "boa-home-task-bv"
@@ -16,14 +16,19 @@ api_version = "2024-10"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_products"
+scopes = "write_products,read_customers,write_customers"
 
 [auth]
 redirect_urls = [
-  "https://heaven-recipients-mem-compatible.trycloudflare.com/auth/callback",
-  "https://heaven-recipients-mem-compatible.trycloudflare.com/auth/shopify/callback",
-  "https://heaven-recipients-mem-compatible.trycloudflare.com/api/auth/callback"
+  "https://ladies-observer-look-choice.trycloudflare.com/auth/callback",
+  "https://ladies-observer-look-choice.trycloudflare.com/auth/shopify/callback",
+  "https://ladies-observer-look-choice.trycloudflare.com/api/auth/callback"
 ]
+
+[app_proxy]
+url = "https://ladies-observer-look-choice.trycloudflare.com"
+prefix = "apps"
+subpath = "boa-home-task-bv"
 
 [pos]
 embedded = false

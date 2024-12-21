@@ -25,12 +25,11 @@ model shopify_sessions_migrations {
 }
 
 model SavedCart {
-  id         String   @id @default(cuid())
-  customerId String
-  shop       String
-  items      Json
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id          Int      @id @default(autoincrement())
+  customerId  String   @unique
+  products    Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  @@unique([customerId, shop])
+  @@map("saved_carts")
 }

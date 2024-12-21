@@ -1,126 +1,112 @@
+import { useState } from 'react';
 import {
   reactExtension,
-  BlockStack,
-  Checkbox,
-  Button,
-  Text,
   Banner,
-  useCartLines,
+  BlockStack,
+  Button,
+  Checkbox,
+  Text,
   useApi,
-  useStorage,
-} from '@shopify/ui-extensions-react/checkout';
-import { useState } from 'react';
-import CryptoJS from 'crypto-js';
+  useCartLines,
+} from "@shopify/ui-extensions-react/checkout";
+import CryptoJS from "crypto-js";
 
-export default reactExtension('purchase.checkout.block.render', () => <Extension />);
+export default reactExtension(
+  "purchase.checkout.block.render",
+  () => <Extension />
+);
 
 function Extension() {
-  const cartLines = useCartLines();
   const api = useApi();
-  const storage = useStorage();
-
-  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const cartLines = useCartLines();
+  const [selectedProducts, setSelectedProducts] = useState(new Set<string>());
   const [isSaving, setIsSaving] = useState(false);
-  const [message, setMessage] = useState<{
-    type: 'info' | 'success' | 'warning' | 'critical', 
-    content: string
-  } | null>(null);
+  const [saveStatus, setSaveStatus] = useState<{ type: string; message: string }>({ type: '', message: '' });
 
-  const handleCheckboxChange = (variantId: string) => {
-    setSelectedItems(prev => 
-      prev.includes(variantId) 
-        ? prev.filter(id => id !== variantId)
-        : [...prev, variantId]
-    );
+  const handleProductToggle = (variantId: string) => {
+    setSelectedProducts(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(variantId)) {
+        newSet.delete(variantId);
+      } else {
+        newSet.add(variantId);
+      }
+      return newSet;
+    });
   };
 
-  const generateSignature = (queryParams) => {
-    // Remove the 'signature' parameter from the query parameters
-    const { signature, ...params } = queryParams;
-    const sharedSecret = "c683790c4e6a28bc2661631a40b73587";
-  
-    // Sort the parameters alphabetically by key
+  const generateSignature = (params: Record<string, string>, sharedSecret: string): string => {
     const sortedParams = Object.keys(params)
       .sort()
-      .map(key => `${key}=${params[key]}`)
+      .map((key) => `${key}=${params[key]}`)
       .join('');
-  
-    // Generate the HMAC SHA-256 signature
-    const calculatedSignature = CryptoJS.HmacSHA256(sortedParams, sharedSecret).toString(CryptoJS.enc.Hex);
-  
-    return calculatedSignature;
-  };
-
-  const getQueryParams = () => {
-    const queryString = window.location.search;
-    return Object.fromEntries(new URLSearchParams(queryString));
-  };
-  
-
-  const handleSave = async () => {
-    if (selectedItems.length === 0) return;
     
+    console.log('Sorted params:', sortedParams);
+    return CryptoJS.HmacSHA256(sortedParams, sharedSecret).toString();
+  };
+
+  const handleSaveCart = async () => {
+    if (selectedProducts.size === 0) {
+      setSaveStatus({
+        type: 'error',
+        message: 'Please select at least one product to save'
+      });
+      return;
+    }
+
     setIsSaving(true);
-    setMessage(null);
+    setSaveStatus({ type: '', message: '' });
 
     try {
-      const token = await api.sessionToken.get();
-      const queryParams = getQueryParams();
-      const signature = generateSignature(queryParams);
-      const fullUrl = 'https://home-assignment-113.myshopify.com/apps/boa-home-task-bv';
+      const queryParams = {
+        timestamp: new Date().toISOString(),
+        shop: 'home-assignment-113.myshopify.com'
+      };
 
-      const fullUrlWithSignature = `${fullUrl}?signature=${signature}`;
+      const sharedSecret = 'fd8bd02ef3b2d45c5e79cc0b97f5a052';
+      const signature = generateSignature(queryParams, sharedSecret);
 
-      // Use a hardcoded URL based on your Shopify app configuration
+      const queryString = new URLSearchParams({
+        ...queryParams,
+        signature
+      }).toString();
 
-      const selectedProducts = cartLines
-        .filter(line => selectedItems.includes(line.merchandise.id))
-        .map(line => ({
-          variantId: line.merchandise.id,
-          quantity: line.quantity
-        }));
+      const apiUrl = `https://home-assignment-113.myshopify.com/apps/boa-home-task-bv/api/save-cart?${queryString}`;
 
-      console.log('Saving products:', selectedProducts);
-
-      const response = await fetch(fullUrlWithSignature, {
+      console.log('Making request to:', apiUrl);
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          items: selectedProducts,
-          timestamp: new Date().toISOString(),
-          signature: signature
+          products: Array.from(selectedProducts),
+          checkoutToken: api.checkoutToken
         })
       });
 
       console.log('Response status:', response.status);
-      
-      const responseText = await response.text();
-      console.log('Response body:', responseText);
 
       if (!response.ok) {
-        throw new Error(`Failed to save cart: ${responseText}`);
+        const errorText = await response.text();
+        console.log('Error response:', errorText);
+        throw new Error(errorText || `Error: ${response.statusText}`);
       }
 
-      // Optionally save to local storage as backup
-      await storage.write('savedCart', JSON.stringify({
-        items: selectedProducts,
-        timestamp: new Date().toISOString()
-      }));
+      const data = await response.json();
+      console.log('Save successful:', data);
 
-      setMessage({
+      setSaveStatus({
         type: 'success',
-        content: `Saved ${selectedProducts.length} items for later`
+        message: 'Your cart has been saved successfully!'
       });
-
-      // Clear selections after successful save
-      setSelectedItems([]);
+      setSelectedProducts(new Set());
     } catch (error) {
       console.error('Save cart error:', error);
-      setMessage({
-        type: 'critical',
-        content: error instanceof Error ? error.message : 'Failed to save cart. Please try again.'
+      setSaveStatus({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Failed to save cart. Please try again.'
       });
     } finally {
       setIsSaving(false);
@@ -129,8 +115,8 @@ function Extension() {
 
   if (cartLines.length === 0) {
     return (
-      <BlockStack spacing="loose" padding="base">
-        <Text>Your cart is empty. Add items to save for later.</Text>
+      <BlockStack border="base" padding="base">
+        <Text>No items in cart</Text>
       </BlockStack>
     );
   }
@@ -139,31 +125,34 @@ function Extension() {
     <BlockStack border="base" padding="base" spacing="loose">
       <Text size="medium" emphasis="bold">Save Items for Later</Text>
       
-      {message && (
-        <Banner status={message.type}>
-          {message.content}
-        </Banner>
-      )}
-      
       <BlockStack spacing="tight">
         {cartLines.map((line) => (
           <Checkbox
             key={line.merchandise.id}
             name={`save-${line.merchandise.id}`}
-            checked={selectedItems.includes(line.merchandise.id)}
-            onChange={() => handleCheckboxChange(line.merchandise.id)}
-            disabled={isSaving}
+            checked={selectedProducts.has(line.merchandise.id)}
+            onChange={() => handleProductToggle(line.merchandise.id)}
           >
-            <Text>{line.merchandise.title}</Text>
+            {line.merchandise.title}
           </Checkbox>
         ))}
       </BlockStack>
 
+      {saveStatus.message && (
+        <Banner
+          status={saveStatus.type === 'error' ? 'critical' : 'success'}
+        >
+          {saveStatus.message}
+        </Banner>
+      )}
+
       <Button
-        onPress={handleSave}
-        disabled={isSaving || selectedItems.length === 0}
+        kind="secondary"
+        onPress={handleSaveCart}
+        loading={isSaving}
+        disabled={isSaving || selectedProducts.size === 0}
       >
-        {isSaving ? 'Saving...' : `Save ${selectedItems.length} Selected Items`}
+        Save Selected Items
       </Button>
     </BlockStack>
   );

@@ -1,110 +1,99 @@
-import express from 'express';
-import cors from 'cors';
-import { PrismaClient } from '@prisma/client';
+// src/index.ts
+import { join } from "path";
+import express from "express";
+import { readFileSync } from "fs";
+import serveStatic from "serve-static";
+import dotenv from "dotenv";
+import crypto from 'crypto';
+import saveCartRouter from './routes/save-cart.js';
+import shopify from "./shopify.js";
 
-const prisma = new PrismaClient();
+dotenv.config();
+
+const backendPort = process.env.BACKEND_PORT as string;
+const envPort = process.env.PORT as string;
+const PORT = parseInt(backendPort || envPort, 10);
+
 const app = express();
 
-app.use(cors());
-app.use(express.json());
+// CORS configuration for Shopify extension requests
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', 'https://extensions.shopifycdn.com');
+  res.header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  res.sendStatus(200);
+});
 
-// Logging middleware
 app.use((req, res, next) => {
-  console.log('Incoming Request:', {
-    method: req.method,
-    path: req.path,
-    body: req.body
-  });
+  res.header('Access-Control-Allow-Origin', 'https://extensions.shopifycdn.com');
+  res.header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
   next();
 });
 
-// Save cart endpoint
-app.post('/apps/boa-home-task-bv/save-cart', async (req, res):Promise<any> => {
-  try {
-    const { items } = req.body;
+app.use(express.json());
 
-    // Validate request
-    if (!Array.isArray(items)) {
-      return res.status(400).json({
-        message: 'Invalid request',
-        details: 'Items must be an array'
-      });
-    }
+// Verify app proxy signature
+//@ts-ignore
+const verifyProxySignature = (req, res, next) => {
+  const { signature, timestamp, shop, ...params } = req.query;
 
-    // TODO: Extract customer ID from JWT token
-    const customerId = 'test-customer'; 
-    const shop = 'home-assignment-113.myshopify.com';
-
-    // Upsert saved cart
-    const savedCart = await prisma.savedCart.upsert({
-      where: { 
-        customerId_shop: {
-          customerId,
-          shop
-        }
-      },
-      update: {
-        items: JSON.stringify(items),
-        updatedAt: new Date()
-      },
-      create: {
-        customerId,
-        shop,
-        items: JSON.stringify(items)
-      }
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: `Saved ${items.length} items to cart`,
-      cart: savedCart
-    });
-  } catch (error) {
-    console.error('Save cart error:', error);
-    return res.status(500).json({
-      message: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    });
+  if (!signature || !timestamp || !shop) {
+    return res.status(400).json({ error: 'Missing required query parameters' });
   }
-});
 
-// Retrieve saved cart endpoint
-app.get('/apps/boa-home-task-bv/retrieve-cart', async (req, res):Promise<any> => {
-  try {
-    // TODO: Extract customer ID from JWT token
-    const customerId = 'test-customer';
-    const shop = 'home-assignment-113.myshopify.com';
+  const sortedParams = Object.entries({ timestamp, shop, ...params })
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, value]) => `${key}=${value}`)
+    .join('');
 
-    const savedCart = await prisma.savedCart.findUnique({
-      where: { 
-        customerId_shop: {
-          customerId,
-          shop
-        }
-      }
+  const sharedSecret = process.env.SHOPIFY_API_SECRET || 'fd8bd02ef3b2d45c5e79cc0b97f5a052';
+  const computedSignature = crypto
+    .createHmac('sha256', sharedSecret)
+    .update(sortedParams)
+    .digest('hex');
+
+  if (computedSignature === signature) {
+    next();
+  } else {
+    console.error('Invalid signature', {
+      provided: signature,
+      computed: computedSignature,
+      params: sortedParams
     });
-
-    if (!savedCart) {
-      return res.status(404).json({
-        message: 'No saved cart found'
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      items: JSON.parse(savedCart.items as string)
-    });
-  } catch (error) {
-    console.error('Retrieve cart error:', error);
-    return res.status(500).json({
-      message: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    });
+    res.status(401).json({ error: 'Invalid signature' });
   }
+};
+
+// Set up Shopify authentication and webhook handling
+app.get(shopify.config.auth.path, shopify.auth.begin());
+app.get(
+  shopify.config.auth.callbackPath,
+  shopify.auth.callback(),
+  shopify.redirectToShopifyOrAppRoot()
+);
+
+app.post(
+  shopify.config.webhooks.path,
+  shopify.processWebhooks({ webhookHandlers: {} })
+);
+
+// Mount save cart routes with proxy signature verification
+app.use('/apps/boa-home-task-bv/api/save-cart', verifyProxySignature, saveCartRouter);
+
+app.use(serveStatic(`${process.cwd()}/frontend/`, { index: false }));
+
+app.use("/*", shopify.ensureInstalledOnShop(), async (_req, res) => {
+  const htmlContent = readFileSync(
+    join(`${process.cwd()}/frontend/`, "index.html"),
+    "utf-8"
+  );
+  const transformedHtml = htmlContent.replace(
+    /%SHOPIFY_API_KEY%/g,
+    process.env.SHOPIFY_API_KEY || ""
+  );
+
+  res.status(200).set("Content-Type", "text/html").send(transformedHtml);
 });
 
-const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 8081;
-
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Backend server is running on port ${PORT}`);
-});
+app.listen(PORT);

@@ -17,19 +17,23 @@
 	},
 	"dependencies": {
 		"@prisma/client": "^5.22.0",
+		"@shopify/shopify-api": "^11.6.1",
 		"@shopify/shopify-app-express": "^5.0.8",
 		"@shopify/shopify-app-session-storage-mysql": "^4.0.8",
 		"axios": "^1.7.9",
 		"compression": "^1.7.5",
 		"cors": "^2.8.5",
 		"cross-env": "^7.0.3",
-		"dotenv": "^16.4.5",
+		"crypto-js": "^4.2.0",
+		"dotenv": "^16.4.7",
 		"install": "^0.13.0",
 		"npm": "^11.0.0",
-		"serve-static": "^1.16.2"
+		"serve-static": "^1.16.2",
+		"shopify-api-node": "^3.14.1"
 	},
 	"devDependencies": {
 		"@types/cors": "^2.8.17",
+		"@types/crypto-js": "^4.2.2",
 		"@types/express": "^5.0.0",
 		"@types/node": "^22.9.3",
 		"@types/react": "^18.3.12",

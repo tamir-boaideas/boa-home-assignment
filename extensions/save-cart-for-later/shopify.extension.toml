@@ -14,7 +14,17 @@ api_access = true
 network_access = true
 storage_access = true
 customer_privacy_api = true
+block_progress = true
+
+[extensions.capabilities.collect_buyer_consent]
+sms_marketing = true
+customer_privacy = true
 
 [[extensions.metafields]]
 namespace = "cart_saver"
 key = "saved_items"
+
+[extensions.settings]
+fields = [
+  { key = "backend_url", type = "single_line_text_field", name = "Backend URL", description = "The URL of your backend API" }
+]
