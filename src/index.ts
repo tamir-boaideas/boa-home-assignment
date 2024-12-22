@@ -3,8 +3,9 @@ import express from "express";
 import { readFileSync } from "fs";
 import serveStatic from "serve-static";
 import dotenv from "dotenv";
-
+import cors from "cors";
 import shopify from "./shopify.js";
+import api from "./api/index.js";
 
 dotenv.config();
 
@@ -28,9 +29,19 @@ app.post(
 );
 
 app.use(express.json());
+app.use(cors());
+
+app.use(
+  cors({
+    origin: "*",
+    credentials: true,
+  })
+);
 
 // All endpoints after this point will require an active session
 app.use("/api/*", shopify.validateAuthenticatedSession());
+
+app.use("/api", api);
 
 app.use(serveStatic(`${process.cwd()}/frontend/`, { index: false }));
 
@@ -47,4 +58,6 @@ app.use("/*", shopify.ensureInstalledOnShop(), async (_req, res) => {
   res.status(200).set("Content-Type", "text/html").send(transformedHtml);
 });
 
-app.listen(PORT);
+app.listen(PORT, () => {
+  console.log("Server is running on port" + PORT);
+});
