@@ -1,3 +1,9 @@
 {
-  "example": ""
+  "sections": {
+    "import_saved_cart": {
+      "logged_in_text": "Retrieve your saved cart below:",
+      "logged_out_text": "Log in to retrieve your saved cart.",
+      "button_text": "Retrieve Cart"
+    }
+  }
 }

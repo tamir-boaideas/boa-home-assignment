@@ -5,17 +5,17 @@ import { prisma } from "../libs/prisma/index.js";
 const router: Router = express.Router();
 
 router.post("/save", async (req: Request, res: Response): Promise<Response> => {
-  const { customerId, selectedProduct } = req.body;
+  const { customerId, productVariants } = req.body;
 
-  if (!customerId || !Array.isArray(selectedProduct)) {
+  if (!customerId || !Array.isArray(productVariants)) {
     return res.status(400).json({ error: "Invalid data" });
   }
-  console.log("customerId>>", customerId);
+
   try {
     await prisma.savedCart.upsert({
       where: { customerId },
-      update: { productVariants: selectedProduct },
-      create: { customerId, productVariants: selectedProduct },
+      update: { productVariants },
+      create: { customerId, productVariants },
     });
 
     return res.status(200).json({ message: "Cart saved successfully!" });
