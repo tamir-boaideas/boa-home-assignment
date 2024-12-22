@@ -23,3 +23,9 @@ model session {
 model shopify_sessions_migrations {
   migration_name String @id @db.VarChar(255)
 }
+
+model SavedCart {
+  customerId    String      @id @unique
+  productVariants Json
+  createdAt     DateTime @default(now())
+}
