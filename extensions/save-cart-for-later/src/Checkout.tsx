@@ -69,7 +69,7 @@ function Extension() {
     <BlockStack border="dotted" padding="tight">
       <Banner title={titleStatus[status]} status={status} />
 
-      {lines.current.map(({ id, merchandise: { title } }) => (
+      {lines.current.map(({  merchandise: { title, id } }) => (
         <Checkbox
           key={id}
           id={id}
