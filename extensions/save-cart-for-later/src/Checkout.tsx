@@ -81,7 +81,7 @@ function Extension() {
         </Checkbox>
       ))}
 
-      <Button onPress={handleSubmit} disabled={isSubmitting} loading={isSubmitting}>
+      <Button onPress={handleSubmit} disabled={!productVariants.length || isSubmitting} loading={isSubmitting}>
         Save Cart
       </Button>
     </BlockStack>
