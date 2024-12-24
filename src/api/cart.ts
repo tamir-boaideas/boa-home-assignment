@@ -1,10 +1,11 @@
 import express, { type Request, type Response, type Router } from "express";
 
 import { prisma } from "../libs/prisma/index.js";
+import { handleAppProxyRequest } from "../middleware/shopifySessionMiddleware.js";
 
 const router: Router = express.Router();
 
-router.post("/save", async (req: Request, res: Response): Promise<Response> => {
+router.post("/save", async (req: Request, res: Response) => {
   const { customerId, productVariants } = req.body;
 
   if (!customerId || !Array.isArray(productVariants)) {
@@ -27,11 +28,12 @@ router.post("/save", async (req: Request, res: Response): Promise<Response> => {
   }
 });
 
-router.post(
+router.get(
   "/:customerId",
+  handleAppProxyRequest,
   async (
     req: Request<{ customerId: string }>,
-    res: Response
+    res: Response,
   ): Promise<Response> => {
     const { customerId } = req.params;
 
@@ -55,7 +57,7 @@ router.post(
         .status(500)
         .json({ message: "Could not retrieve the saved cart." });
     }
-  }
+  },
 );
 
 export default router;

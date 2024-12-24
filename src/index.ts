@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 import shopify from "./shopify.js";
 import api from "./api/index.js";
+import { Session } from "@shopify/shopify-api";
 
 dotenv.config();
 
@@ -15,17 +16,17 @@ const PORT = parseInt(backendPort || envPort, 10);
 
 const app = express();
 
-// Set up Shopify authentication and webhook handling
-app.get(shopify.config.auth.path, shopify.auth.begin());
+app.use("/api", api);
+
 app.get(
   shopify.config.auth.callbackPath,
   shopify.auth.callback(),
-  shopify.redirectToShopifyOrAppRoot()
+  shopify.redirectToShopifyOrAppRoot(),
 );
 
 app.post(
   shopify.config.webhooks.path,
-  shopify.processWebhooks({ webhookHandlers: {} })
+  shopify.processWebhooks({ webhookHandlers: {} }),
 );
 
 app.use(express.json());
@@ -35,24 +36,22 @@ app.use(
   cors({
     origin: "*",
     credentials: true,
-  })
+  }),
 );
 
 // All endpoints after this point will require an active session
 app.use("/api/*", shopify.validateAuthenticatedSession());
-
-app.use("/api", api);
 
 app.use(serveStatic(`${process.cwd()}/frontend/`, { index: false }));
 
 app.use("/*", shopify.ensureInstalledOnShop(), async (_req, res) => {
   const htmlContent = readFileSync(
     join(`${process.cwd()}/frontend/`, "index.html"),
-    "utf-8"
+    "utf-8",
   );
   const transformedHtml = htmlContent.replace(
     /%SHOPIFY_API_KEY%/g,
-    process.env.SHOPIFY_API_KEY || ""
+    process.env.SHOPIFY_API_KEY || "",
   );
 
   res.status(200).set("Content-Type", "text/html").send(transformedHtml);

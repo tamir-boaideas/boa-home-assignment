@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "7e7573879dc82ecdf93f527ee19512d0"
-application_url = "https://momentum-bench-embassy-segments.trycloudflare.com"
+application_url = "https://acids-donors-locale-named.trycloudflare.com"
 embedded = true
 name = "boa-home-task-DG"
 handle = "boa-home-task-dg"
@@ -20,9 +20,9 @@ scopes = ""
 
 [auth]
 redirect_urls = [
-  "https://momentum-bench-embassy-segments.trycloudflare.com/auth/callback",
-  "https://momentum-bench-embassy-segments.trycloudflare.com/auth/shopify/callback",
-  "https://momentum-bench-embassy-segments.trycloudflare.com/api/auth/callback"
+  "https://acids-donors-locale-named.trycloudflare.com/auth/callback",
+  "https://acids-donors-locale-named.trycloudflare.com/auth/shopify/callback",
+  "https://acids-donors-locale-named.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]
