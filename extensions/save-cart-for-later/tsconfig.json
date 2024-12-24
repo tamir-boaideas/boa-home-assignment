@@ -1,9 +1,12 @@
 {
-  // This tsconfig.json file is only needed to inform the IDE
-  // About the `react-jsx` tsconfig option, so IDE doesn't complain about missing react import
-  // Changing options here won't affect the build of your extension
   "compilerOptions": {
-    "jsx": "react-jsx"
+    "lib": ["es2016", "dom"],
+    "jsx": "react-jsx",
+    "strict": true,
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "skipLibCheck": true
   },
-  "include": ["./src"]
+  "include": ["./src"],
+  "exclude": ["node_modules"]
 }

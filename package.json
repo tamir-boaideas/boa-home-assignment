@@ -5,16 +5,21 @@
   "license": "BOA Ideas",
   "scripts": {
     "shopify": "shopify",
+    "build": "shopify extension build",
     "dev": "shopify app dev",
     "deploy": "shopify app deploy",
     "create": "shopify app config link"
   },
   "dependencies": {
-    "@shopify/app": "^3.58.2",
-    "@shopify/cli": "^3.70.0",
-    "@shopify/ui-extensions": "2024.10.1",
-    "@shopify/ui-extensions-react": "2024.10.1",
-    "react": "^18.3.1"
+    "@shopify/ui-extensions": "^2024.10.1",
+    "@shopify/ui-extensions-react": "^2024.10.1",
+    "archiver": "^7.0.1",
+    "axios": "^1.7.9",
+    "cli-progress": "^3.12.0",
+    "http-cache-semantics": "^4.1.1",
+    "react": "^18.3.1",
+    "readdir-glob": "^2.0.1",
+    "tinycolor2": "^1.6.0"
   },
   "author": "BOA Ideas",
   "overrides": {

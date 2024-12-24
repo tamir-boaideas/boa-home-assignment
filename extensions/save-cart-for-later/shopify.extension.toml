@@ -5,6 +5,15 @@
 # https://shopify.dev/docs/api/usage/versioning
 api_version = "2024-10"
 
+[capabilities]
+network_access = true
+
+scopes = "read_products, write_products, read_customers, write_customers"
+
+[scopes]
+read_products = true
+write_products = true
+
 [[extensions]]
 name = "save-cart-for-later"
 handle = "save-cart-for-later"
@@ -21,7 +30,8 @@ target = "purchase.checkout.block.render"
 [extensions.capabilities]
 # Gives your extension access to directly query Shopify’s storefront API.
 # https://shopify.dev/docs/api/checkout-ui-extensions/unstable/configuration#api-access
-# api_access = true
+network_access = true
+api_access = true
 
 # Gives your extension access to make external network calls, using the
 # JavaScript `fetch()` API. Learn more:

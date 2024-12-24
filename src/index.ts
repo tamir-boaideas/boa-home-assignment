@@ -1,50 +1,32 @@
-import { join } from "path";
-import express from "express";
-import { readFileSync } from "fs";
-import serveStatic from "serve-static";
-import dotenv from "dotenv";
-
-import shopify from "./shopify.js";
+import express, { Request, Response } from 'express';
+import dotenv from 'dotenv';
+import router from './Routes/routes.js';
+import { errorHandlerMiddleware } from './middlewares/errorHandler.js';
 
 dotenv.config();
 
-const backendPort = process.env.BACKEND_PORT as string;
-const envPort = process.env.PORT as string;
-const PORT = parseInt(backendPort || envPort, 10);
-
 const app = express();
+const PORT = process.env.PORT || 3000;
 
-// Set up Shopify authentication and webhook handling
-app.get(shopify.config.auth.path, shopify.auth.begin());
-app.get(
-  shopify.config.auth.callbackPath,
-  shopify.auth.callback(),
-  shopify.redirectToShopifyOrAppRoot()
-);
-
-app.post(
-  shopify.config.webhooks.path,
-  shopify.processWebhooks({ webhookHandlers: {} })
-);
-
+// Middleware for parsing JSON requests
 app.use(express.json());
 
-// All endpoints after this point will require an active session
-app.use("/api/*", shopify.validateAuthenticatedSession());
+// Attach all routes
+app.use(router);
 
-app.use(serveStatic(`${process.cwd()}/frontend/`, { index: false }));
-
-app.use("/*", shopify.ensureInstalledOnShop(), async (_req, res) => {
-  const htmlContent = readFileSync(
-    join(`${process.cwd()}/frontend/`, "index.html"),
-    "utf-8"
-  );
-  const transformedHtml = htmlContent.replace(
-    /%SHOPIFY_API_KEY%/g,
-    process.env.SHOPIFY_API_KEY || ""
-  );
-
-  res.status(200).set("Content-Type", "text/html").send(transformedHtml);
+// Fallback route for undefined endpoints
+app.get('/', (_req: Request, res: Response) => {
+  res.status(200).json({
+    message: 'Welcome to the Shopify App API!',
+  });
 });
 
-app.listen(PORT);
+// Apply global error handler middleware
+app.use(errorHandlerMiddleware);
+
+// Start the server
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
+export default app;
