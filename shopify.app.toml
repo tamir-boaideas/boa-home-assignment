@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "e2b220ec1d2ac4e75a943f386fddcdda"
-application_url = "https://ruling-snapshot-personality-an.trycloudflare.com"
+application_url = "https://meanwhile-carrying-artistic-ment.trycloudflare.com"
 embedded = true
 name = "boa-hame-task-Sh"
 handle = "boa-hame-task-sh"
@@ -20,9 +20,9 @@ scopes = ""
 
 [auth]
 redirect_urls = [
-  "https://ruling-snapshot-personality-an.trycloudflare.com/auth/callback",
-  "https://ruling-snapshot-personality-an.trycloudflare.com/auth/shopify/callback",
-  "https://ruling-snapshot-personality-an.trycloudflare.com/api/auth/callback"
+  "https://meanwhile-carrying-artistic-ment.trycloudflare.com/auth/callback",
+  "https://meanwhile-carrying-artistic-ment.trycloudflare.com/auth/shopify/callback",
+  "https://meanwhile-carrying-artistic-ment.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]

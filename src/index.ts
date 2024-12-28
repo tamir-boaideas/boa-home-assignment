@@ -3,7 +3,7 @@ import express from "express";
 import { readFileSync } from "fs";
 import serveStatic from "serve-static";
 import dotenv from "dotenv";
-
+import cartRoutes from "./backend/routes/cart.js";
 import shopify from "./shopify.js";
 
 dotenv.config();
@@ -31,6 +31,9 @@ app.use(express.json());
 
 // All endpoints after this point will require an active session
 app.use("/api/*", shopify.validateAuthenticatedSession());
+
+app.use("/api", cartRoutes);
+
 
 app.use(serveStatic(`${process.cwd()}/frontend/`, { index: false }));
 

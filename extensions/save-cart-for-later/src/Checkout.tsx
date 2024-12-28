@@ -1,3 +1,4 @@
+// src/extensions/Extension.tsx
 import {
   reactExtension,
   Banner,
@@ -11,44 +12,48 @@ import {
   Text,
   useApi,
 } from "@shopify/ui-extensions-react/checkout";
+import { CartLine } from "@shopify/ui-extensions/src/surfaces/checkout/api/standard/standard";
 import { useState, useEffect } from "react";
 
 export default reactExtension("purchase.checkout.block.render", () => (
   <Extension />
 ));
 
+interface CartItem {
+  id: string;
+  title: string;
+}
+
 function Extension() {
-  const [cartItems, setCartItems] = useState([]);
-  const [selectedItems, setSelectedItems] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const { extension } = useApi();
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>(
+    {}
+  );
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const api = useApi();
+
+  const { shop } = api;
+  const customerId = shop.id.split('/').pop();
 
   useEffect(() => {
     async function fetchCartItems() {
       setLoading(true);
       setError(null);
+
       try {
-        const checkoutLines = [{
-          id: "1",
-          merchandise: {
-            title: "Product 1",
-          },
-        }, {
-          id: "2",
-          merchandise: {
-            title: "Product 2",
-          },
-        }]
-        const items = checkoutLines.map(line => ({
+        const checkoutLines: CartLine[] = api.lines?.current || [];
+        console.log(checkoutLines);
+        const items = checkoutLines.map((line) => ({
           id: line.id,
           title: line.merchandise.title,
         }));
 
         setCartItems(items);
 
-        const initialSelected = {};
-        items.forEach(item => (initialSelected[item.id] = false));
+        const initialSelected: Record<string, boolean> = {};
+        items.forEach((item) => (initialSelected[item.id] = false));
         setSelectedItems(initialSelected);
       } catch (error) {
         console.error("Error fetching cart items:", error);
@@ -59,9 +64,9 @@ function Extension() {
     }
 
     fetchCartItems();
-  }, [extension]);
+  }, [api]);
 
-  const handleCheckboxChange = (itemId) => {
+  const handleCheckboxChange = (itemId: string) => {
     setSelectedItems((prev) => ({
       ...prev,
       [itemId]: !prev[itemId],
@@ -71,27 +76,39 @@ function Extension() {
   const handleSubmit = async () => {
     setError(null);
     try {
-      const selectedProducts = cartItems.filter(item => selectedItems[item.id]);
-      // const shop = extension.shop.domain;
+      const selectedProducts = cartItems.filter(
+        (item) => selectedItems[item.id]
+      );
+      const CLOUDFLARE_API_URL =
+        "https://meanwhile-carrying-artistic-ment.trycloudflare.com";
 
-      const response = await fetch(`/apps/save-cart`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          // "X-Shopify-Shop-Domain": shop,
-        },
-        body: JSON.stringify({
-          items: selectedProducts,
-          // customerId: extension.customer?.id,
-        }),
-      });
+      const BASE_URL = CLOUDFLARE_API_URL || "https://localhost:3000";
 
+      // const shopDomain = shop.myshopifyDomain;
+      // const host = btoa(shopDomain);
+
+      const response = await fetch(
+        // `${BASE_URL}/apps/api/cart/save-cart?shop=${shopDomain}&host=${host}`,
+        `${BASE_URL}/apps/api/cart/save-cart`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            customerId: customerId,
+            items: selectedProducts,
+          }),
+        }
+      );
+
+      console.log(response);
       if (!response.ok) {
         throw new Error("Failed to save cart");
       }
 
-      const resetSelected = {};
-      cartItems.forEach(item => (resetSelected[item.id] = false));
+      const resetSelected: Record<string, boolean> = {};
+      cartItems.forEach((item) => (resetSelected[item.id] = false));
       setSelectedItems(resetSelected);
     } catch (error) {
       console.error("Error saving cart:", error);
@@ -137,3 +154,4 @@ function Extension() {
     </BlockStack>
   );
 }
+
