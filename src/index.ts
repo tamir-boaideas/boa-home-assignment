@@ -8,6 +8,7 @@ import shopify from "./shopify.js";
 
 dotenv.config();
 
+
 const backendPort = process.env.BACKEND_PORT as string;
 const envPort = process.env.PORT as string;
 const PORT = parseInt(backendPort || envPort, 10);
