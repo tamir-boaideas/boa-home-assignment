@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "de72ddb7011065720a6f3f546b230694"
-application_url = "https://host-totals-fm-removing.trycloudflare.com"
+application_url = "https://good-retrieved-hypothetical-winning.trycloudflare.com"
 embedded = true
 name = "boa-home-task-YK"
 handle = "boa-home-task-yk"
@@ -20,15 +20,15 @@ scopes = "read_customers,write_products,read_products"
 
 [auth]
 redirect_urls = [
-  "https://host-totals-fm-removing.trycloudflare.com/auth/callback",
-  "https://host-totals-fm-removing.trycloudflare.com/auth/shopify/callback",
-  "https://host-totals-fm-removing.trycloudflare.com/api/auth/callback"
+  "https://good-retrieved-hypothetical-winning.trycloudflare.com/auth/callback",
+  "https://good-retrieved-hypothetical-winning.trycloudflare.com/auth/shopify/callback",
+  "https://good-retrieved-hypothetical-winning.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]
 embedded = false
 
 [app_proxy]
-url = "https://host-totals-fm-removing.trycloudflare.com"
+url = "https://good-retrieved-hypothetical-winning.trycloudflare.com"
 prefix = "apps"
 subpath = "saved-cart"
