@@ -18,13 +18,13 @@ extension_points = ["purchase.checkout.payment-method-list.render-before"]
 # https://shopify.dev/docs/api/checkout-ui-extensions/unstable/extension-targets-overview
 
 [[extensions.targeting]]
-module = "./src/index.tsx"
+module = "./src/Checkout.tsx"
 target = "purchase.checkout.payment-method-list.render-before"
 
 [extensions.capabilities]
 # Gives your extension access to directly query Shopify’s storefront API.
 # https://shopify.dev/docs/api/checkout-ui-extensions/unstable/configuration#api-access
-# api_access = true
+api_access = true
 
 # Gives your extension access to make external network calls, using the
 # JavaScript `fetch()` API. Learn more:
