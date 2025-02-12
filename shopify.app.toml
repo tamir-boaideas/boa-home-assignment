@@ -1,0 +1,20 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+name = "boa-home-task-YU"
+client_id = "e26341cd7471aa623a39f2933a41346e"
+application_url = "https://movements-four-ton-interest.trycloudflare.com"
+embedded = true
+
+[build]
+dev_store_url = "home-assignment-260.myshopify.com"
+automatically_update_urls_on_dev = true
+
+[auth]
+redirect_urls = [
+  "https://movements-four-ton-interest.trycloudflare.com/auth/callback",
+  "https://movements-four-ton-interest.trycloudflare.com/auth/shopify/callback",
+  "https://movements-four-ton-interest.trycloudflare.com/api/auth/callback"
+]
+
+[webhooks]
+api_version = "2024-01"
