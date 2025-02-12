@@ -9,6 +9,7 @@ import {
   InlineStack,
   Banner,
   useCustomer,
+  useApi,
 } from "@shopify/ui-extensions-react/checkout";
 import { useState } from "react";
 
@@ -22,6 +23,8 @@ export default reactExtension(
   () => <Extension />
 );
 
+const APP_URL = "https://peas-sphere-manufacturing-expert.trycloudflare.com";
+
 function Extension() {
   const cartLines = useCartLines();
   const customer = useCustomer();
@@ -32,8 +35,11 @@ function Extension() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // If customer is not logged in, show login prompt
-  if (!customer && !customer?.email) {
+  const { shop } = useApi();
+
+  console.log(shop, "shop");
+
+  if (!customer && !customer?.id) {
     return (
       <BlockStack
         border="base"
@@ -62,38 +68,44 @@ function Extension() {
         : prev.filter((product) => product.id !== productId)
     );
 
-    // Clear any previous messages
     setError(null);
     setSuccessMessage(null);
   };
 
   const handleSave = async () => {
     try {
+      console.log("inside handleSave");
       setIsSaving(true);
       setError(null);
       setSuccessMessage(null);
 
-      // Save cart through App Proxy
-      const response = await fetch("/apps/saved-cart", {
+      const response = await fetch(`${APP_URL}/api/saved-cart`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "X-Shopify-Shop-Domain": shop.myshopifyDomain,
         },
         body: JSON.stringify({
           products: selectedProducts,
+          customerId: customer?.id,
+          shop: shop.myshopifyDomain,
         }),
+        credentials: "include",
       });
 
       if (!response.ok) {
-        throw new Error("Failed to save cart");
+        console.log("inside response.ok");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to save cart");
       }
 
       setSuccessMessage("Cart saved successfully!");
-      setSelectedProducts([]); // Clear selections after successful save
+      setSelectedProducts([]);
     } catch (err) {
       setError("Failed to save cart. Please try again later.");
       console.error("Save error:", err);
     } finally {
+      console.log("inside finally");
       setIsSaving(false);
     }
   };
@@ -106,19 +118,15 @@ function Extension() {
       spacing="loose"
       background="subdued"
     >
-      {/* Header section with info icon and text inline */}
       <InlineStack spacing="extraTight" blockAlignment="center">
         <Icon source="info" appearance="accent" />
         <Text emphasis="bold">Save your cart</Text>
       </InlineStack>
 
-      {/* Error message */}
       {error && <Banner status="critical">{error}</Banner>}
 
-      {/* Success message */}
       {successMessage && <Banner status="success">{successMessage}</Banner>}
 
-      {/* Products list section */}
       <BlockStack spacing="tight" inlineAlignment="start">
         {cartLines.map((line) => (
           <Checkbox
@@ -138,7 +146,6 @@ function Extension() {
         ))}
       </BlockStack>
 
-      {/* Save button section */}
       <BlockStack inlineAlignment="start">
         <Button
           kind="primary"
