@@ -5,6 +5,7 @@ import serveStatic from "serve-static";
 import dotenv from "dotenv";
 
 import shopify from "./shopify.js";
+import router from "./routes/cart.js";
 
 dotenv.config();
 
@@ -29,6 +30,9 @@ app.post(
 
 app.use(express.json());
 
+//  Connecting shopping cart routes
+app.use("/api/cart", router);
+
 // All endpoints after this point will require an active session
 app.use("/api/*", shopify.validateAuthenticatedSession());
 
@@ -47,4 +51,8 @@ app.use("/*", shopify.ensureInstalledOnShop(), async (_req, res) => {
   res.status(200).set("Content-Type", "text/html").send(transformedHtml);
 });
 
-app.listen(PORT);
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
+console.log(`Сервер запущен на порту ${PORT}`);

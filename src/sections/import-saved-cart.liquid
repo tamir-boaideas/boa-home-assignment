@@ -1,0 +1,163 @@
+<div id="import-saved-cart" 
+     style="background-color: {{ settings.background_color }}; color: {{ settings.text_color }}; padding: 20px;"
+     data-customer-id="{{ customer.id }}"
+>
+  {% if customer %}
+    <p>{{ settings.logged_in_text }}</p>
+    <button id="import-cart-btn" class="button">
+      {{ settings.button_text | default: 'Import Saved Cart' }}
+    </button>
+    <div id="import-cart-status" style="display: none; margin-top: 10px;"></div>
+  {% else %}
+    <p>{{ settings.not_logged_in_text }}</p>
+    <a href="{{ routes.account_login_url }}" class="button">
+      {{ settings.login_button_text | default: 'Log In' }}
+    </a>
+  {% endif %}
+</div>
+
+{% javascript %}
+document.addEventListener('DOMContentLoaded', function() {
+  const btn = document.getElementById('import-cart-btn');
+  const statusDiv = document.getElementById('import-cart-status');
+  const container = document.getElementById('import-saved-cart');
+  
+  if (btn && container) {
+    btn.addEventListener('click', async function() {
+      try {
+        btn.disabled = true;
+        btn.textContent = 'Loading...';
+        
+        const customerId = container.dataset.customerId;
+        const proxyUrl = "/apps/boa-home-task/api/cart/retrieve?customerId=" + encodeURIComponent(customerId);
+        
+        const response = await fetch(proxyUrl);
+        if (!response.ok) {
+          throw new Error('Error retrieving saved cart');
+        }
+        
+        const data = await response.json();
+        if (!data.variantIds?.length) {
+          showStatus('Saved cart is empty', 'warning');
+          return;
+        }
+
+        for (const variantId of data.variantIds) {
+          const cartResponse = await fetch('/cart/add.js', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              items: [{ id: variantId, quantity: 1 }]
+            })
+          });
+          
+          if (!cartResponse.ok) {
+            throw new Error('Error adding item to cart');
+          }
+        }
+
+        showStatus('Cart imported successfully!', 'success');
+        setTimeout(() => window.location.reload(), 1500);
+        
+      } catch (error) {
+        console.error('Error:', error);
+        showStatus(error.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '{{ settings.button_text | default: "Import Saved Cart" }}';
+      }
+    });
+  }
+
+  function showStatus(message, type = 'info') {
+    if (statusDiv) {
+      statusDiv.style.display = 'block';
+      statusDiv.className = `status-message ${type}`;
+      statusDiv.textContent = message;
+    }
+  }
+});
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "Import Saved Cart",
+  "settings": [
+    {
+      "type": "text",
+      "id": "logged_in_text",
+      "label": "Text for logged in customers",
+      "default": "You have a saved cart. Click the button below to import it."
+    },
+    {
+      "type": "text",
+      "id": "not_logged_in_text",
+      "label": "Text for not logged in customers",
+      "default": "Please log in to use this feature."
+    },
+    {
+      "type": "text",
+      "id": "button_text",
+      "label": "Button text",
+      "default": "Import Saved Cart"
+    },
+    {
+      "type": "text",
+      "id": "login_button_text",
+      "label": "Login button text",
+      "default": "Log In"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text color",
+      "default": "#000000"
+    }
+  ]
+}
+{% endschema %}
+
+<style>
+.status-message {
+  padding: 10px;
+  border-radius: 4px;
+  margin-top: 10px;
+}
+
+.status-message.success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.status-message.error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.status-message.warning {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+}
+
+.button {
+  padding: 10px 20px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+</style>

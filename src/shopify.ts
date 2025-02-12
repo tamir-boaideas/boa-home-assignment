@@ -23,3 +23,9 @@ export default shopifyApp({
   },
   sessionStorage: new MySQLSessionStorage(process.env.DATABASE_URL || ""),
 });
+
+// Добавить настройку App Proxy
+const appProxy = {
+  prefix: "/apps/boa-home-task",
+  proxyPath: "/api",
+};
