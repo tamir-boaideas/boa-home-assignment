@@ -18,7 +18,7 @@ extension_points = ["purchase.checkout.payment-method-list.render-before"]
 # https://shopify.dev/docs/api/checkout-ui-extensions/unstable/extension-targets-overview
 
 [[extensions.targeting]]
-module = "./src/Checkout.tsx"
+module = "./src/index.tsx"
 target = "purchase.checkout.payment-method-list.render-before"
 
 [extensions.capabilities]
